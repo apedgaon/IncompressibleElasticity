@@ -62,6 +62,7 @@ enum class MeshType
 
 enum class ShapeFcnType
 {
+    constant = 0,
     lagrange_linear = 1,
     lagrange_quadratic = 2,
     lagrange_cubic = 3
@@ -153,4 +154,5 @@ struct SolverControls
 };
 
 void print_mat(Eigen::MatrixXd& A, std::string filename);
+void print_vec(Eigen::VectorXd& A, std::string filename);
 void fem_to_vtk_vector(std::string file, std::vector<connectivity>& ec, std::vector<coords>& nc, Eigen::VectorXd& d);

@@ -26,6 +26,8 @@ void ElasticityFEM<dim>::solve()
     assemble();
     apply_dirBC();
     dd = Kd.ldlt().solve(Fd);
+    Eigen::VectorXd err = Kd * dd - Fd;
+    std::cout << "Error norm = " << err.norm() / Fd.norm() << "\n";
     reform_full_sol();
 }
 
@@ -89,7 +91,7 @@ void ElasticityFEM<dim>::init_shp_functions()
             }
         }
     }
-    if (mesh.mesh_type == MeshType::quadrilateral)
+    else if (mesh.mesh_type == MeshType::quadrilateral)
     {
         if (quadrature_type == QuadratureType::one_point)
         {

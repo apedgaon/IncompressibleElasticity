@@ -572,7 +572,7 @@ void Mesh2<dim>::generate(Geometry<dim> geom)
                     unsigned int nd3 = (jdx + 1) * xnd + idx;
 
                     connectivity conn(3);
-                    conn[0] = nd0;
+                   /* conn[0] = nd0;
                     conn[1] = nd1;
                     conn[2] = nd3;
                     elem_conn.push_back(conn);
@@ -580,6 +580,16 @@ void Mesh2<dim>::generate(Geometry<dim> geom)
                     conn[0] = nd2;
                     conn[1] = nd3;
                     conn[2] = nd1;
+                    elem_conn.push_back(conn);*/
+
+                    conn[0] = nd1;
+                    conn[1] = nd2;
+                    conn[2] = nd0;
+                    elem_conn.push_back(conn);
+
+                    conn[0] = nd3;
+                    conn[1] = nd0;
+                    conn[2] = nd2;
                     elem_conn.push_back(conn);
                 }
             }
@@ -704,6 +714,16 @@ void Material::init_elasticity_tensor()
 
 // Printing Eigen::Matrix in a specified file
 void print_mat(Eigen::MatrixXd& A, std::string filename)
+{
+    std::ofstream write_stream(filename.c_str());
+    if (write_stream.is_open())
+    {
+        write_stream << std::setprecision(16) << A;
+        write_stream.close();
+    }
+}
+
+void print_vec(Eigen::VectorXd& A, std::string filename)
 {
     std::ofstream write_stream(filename.c_str());
     if (write_stream.is_open())
