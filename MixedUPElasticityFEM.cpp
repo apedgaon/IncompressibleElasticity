@@ -428,6 +428,7 @@ void MixedUPElasticityFEM<dim>::compute_quad_stiff(unsigned int iq, Eigen::Matri
     unsigned int loc_kdx;
     double temp;
 
+    // integral (w_i,j  mu  u_i,j) dV
     for (unsigned int bshp = 0; bshp < mesh.Nen; ++bshp)
     {
         for (unsigned int ashp = 0; ashp < mesh.Nen; ++ashp)
@@ -438,9 +439,26 @@ void MixedUPElasticityFEM<dim>::compute_quad_stiff(unsigned int iq, Eigen::Matri
                 loc_idx = dim * ashp + idim;
                 temp = 0.0;
                 for (unsigned int jdim = 0; jdim < dim; ++jdim)
-                    temp += dNdX(ashp, jdim) * 2.0 * mat.mu * dNdX(bshp, jdim);
+                    temp += dNdX(ashp, jdim) * mat.mu * dNdX(bshp, jdim);
 
                 Kl(loc_idx, loc_kdx) += temp * wts(iq) * det_jac;
+            }
+        }
+    }
+
+    // integral (w_i,j  mu  u_j,i) dV
+    for (unsigned int bshp = 0; bshp < mesh.Nen; ++bshp)
+    {
+        for (unsigned int jdim = 0; jdim < dim; ++jdim)
+        {
+            loc_kdx = dim * bshp + jdim;
+            for (unsigned int ashp = 0; ashp < mesh.Nen; ++ashp)
+            {
+                for (unsigned int idim = 0; idim < dim; ++idim)
+                {
+                    loc_idx = dim * ashp + idim;
+                    Kl(loc_idx, loc_kdx) += dNdX(ashp, jdim) * mat.mu * dNdX(bshp, idim) * wts(iq) * det_jac;
+                }
             }
         }
     }
