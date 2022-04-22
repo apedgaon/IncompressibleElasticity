@@ -46,7 +46,7 @@ double LinearLagrange::N_quad(unsigned int index, double xi, double eta)
 double LinearLagrange::dNdxi_quad(unsigned int index, unsigned int didx, double xi, double eta)
 {
     double val = 0.0;
-    if (didx == 0)
+    if (didx == 0) // dNdxi
     {
         if (index == 0)
             val = -0.25 * (1 - eta);
@@ -57,7 +57,7 @@ double LinearLagrange::dNdxi_quad(unsigned int index, unsigned int didx, double 
         else if (index == 3)
             val = -0.25 * (1 + eta);
     }
-    else if (didx == 1)
+    else if (didx == 1) // dNdeta
     {
         if (index == 0)
             val = -0.25 * (1 - xi);
@@ -86,31 +86,27 @@ double LinearLagrange::N_tri(unsigned int index, double xi, double eta)
     return val;
 }
 
-// 2D (Tri) Element Derivative wrt xi of Linear Shape fcn
-double LinearLagrange::dNdxi_tri(unsigned int index, double xi, double eta)
+double LinearLagrange::dNdxi_tri(unsigned int index, unsigned int didx, double xi, double eta)
 {
     double val = 0.0;
-    if (index == 0)
-        val = -1.0;
-    else if (index == 1)
-        val = 1.0;
-    else if (index == 2)
-        val = 0.0;
-
-    return val;
-}
-
-// 2D (Tri) Element Derivative wrt eta of Linear Shape fcn
-double LinearLagrange::dNdeta_tri(unsigned int index, double xi, double eta)
-{
-    double val = 0.0;
-    if (index == 0)
-        val = -1.0;
-    else if (index == 1)
-        val = 0.0;
-    else if (index == 2)
-        val = 1.0;
-
+    if (didx == 0)  // dNdxi
+    {
+        if (index == 0)
+            val = -1.0;
+        else if (index == 1)
+            val = 1.0;
+        else if (index == 2)
+            val = 0.0;
+    }
+    else if (didx == 1)  // dNdeta
+    {
+        if (index == 0)
+            val = -1.0;
+        else if (index == 1)
+            val = 0.0;
+        else if (index == 2)
+            val = 1.0;
+    }
     return val;
 }
 

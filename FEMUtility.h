@@ -17,8 +17,7 @@ public:
 
     // 2D Triangle
     static double N_tri(unsigned int index, double xi, double eta);
-    static double dNdxi_tri(unsigned int index, double xi, double eta);
-    static double dNdeta_tri(unsigned int index, double xi, double eta);
+    static double dNdxi_tri(unsigned int index, unsigned int didx, double xi, double eta);
 
     // 3D Hexahedral
     static double N_hex(unsigned int index, double xi, double eta, double kappa);
