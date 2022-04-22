@@ -684,6 +684,63 @@ void Mesh2<dim>::generate(Geometry<dim> geom)
             }
         }
     }
+    else if (mesh_type == MeshType::hexahedral)
+    {
+        if (shp_func_type == ShapeFcnType::lagrange_linear)
+        {
+            // Discretization points
+            Nen = static_cast<unsigned int>(pow(2, dim));
+            unsigned int Nnd_dim[dim];
+            Nel = 1;  Nnd = 1;
+            double h_dim[dim];
+            for (unsigned int idx = 0; idx < dim; ++idx)
+            {
+                Nel *= divs[idx];
+                Nnd_dim[idx] = divs[idx] + 1;
+                Nnd *= Nnd_dim[idx];
+                h_dim[idx] = geom.length[idx] / divs[idx];
+            }
+
+            // Create nodal coordinates
+            nodal_coords.reserve(Nnd);
+            for (unsigned int kdx = 0; kdx < Nnd_dim[2]; ++kdx)
+            {
+                for (unsigned int jdx = 0; jdx < Nnd_dim[1]; ++jdx)
+                {
+                    for (unsigned int idx = 0; idx < Nnd_dim[0]; ++idx)
+                    {
+                        coords coordinates(3);
+                        coordinates[0] = idx * h_dim[0];
+                        coordinates[1] = jdx * h_dim[1];
+                        coordinates[2] = kdx * h_dim[2];
+                        nodal_coords.push_back(coordinates);
+                    }
+                }
+            }
+
+            // Create element connectivity
+            elem_conn.reserve(Nel);
+            for (unsigned int kdx = 0; kdx < divs[2]; ++kdx)
+            {
+                for (unsigned int jdx = 0; jdx < divs[1]; ++jdx)
+                {
+                    for (unsigned int idx = 0; idx < divs[0]; ++idx)
+                    {
+                        connectivity conn(8);
+                        conn[0] = kdx * Nnd_dim[1] * Nnd_dim[0] + jdx * Nnd_dim[0] + idx;
+                        conn[1] = kdx * Nnd_dim[1] * Nnd_dim[0] + jdx * Nnd_dim[0] + (idx + 1);
+                        conn[2] = kdx * Nnd_dim[1] * Nnd_dim[0] + (jdx + 1) * Nnd_dim[0] + (idx + 1);
+                        conn[3] = kdx * Nnd_dim[1] * Nnd_dim[0] + (jdx + 1) * Nnd_dim[0] + idx;
+                        conn[4] = (kdx + 1) * Nnd_dim[1] * Nnd_dim[0] + jdx * Nnd_dim[0] + idx;
+                        conn[5] = (kdx + 1) * Nnd_dim[1] * Nnd_dim[0] + jdx * Nnd_dim[0] + (idx + 1);
+                        conn[6] = (kdx + 1) * Nnd_dim[1] * Nnd_dim[0] + (jdx + 1) * Nnd_dim[0] + (idx + 1);
+                        conn[7] = (kdx + 1) * Nnd_dim[1] * Nnd_dim[0] + (jdx + 1) * Nnd_dim[0] + idx;
+                        elem_conn.push_back(conn);
+                    }
+                }
+            }
+        }
+    }
 }
 
 // Forms Elasticty Tensor C_IJKL from isotropic material parameter lambda and mu
