@@ -12,22 +12,29 @@ void ElasticityFEM<dim>::generate_mesh()
 template<unsigned int dim>
 void ElasticityFEM<dim>::initialize()
 {
+    // Initialize global vectors
     gdofs = mesh.Nnd * dim;
     K = Eigen::MatrixXd::Zero(gdofs, gdofs);
     F = Eigen::VectorXd::Zero(gdofs);
     d = Eigen::VectorXd::Zero(gdofs);
 
+    // Initialize shape functions
     init_shp_functions();
 }
 
 template<unsigned int dim>
 void ElasticityFEM<dim>::solve()
 {
+    // Assemble stiffness and force
     assemble();
+
+    // Apply Dirichlet Boundary conditions
     apply_dirBC();
+
+    // Solve linear system of equations using Cholesky
     dd = Kd.ldlt().solve(Fd);
-    Eigen::VectorXd err = Kd * dd - Fd;
-    std::cout << "Error norm = " << err.norm() / Fd.norm() << "\n";
+
+    // Reform full solution vector
     reform_full_sol();
 }
 
@@ -45,6 +52,9 @@ void ElasticityFEM<dim>::post_print(std::string file)
 template<unsigned int dim>
 void ElasticityFEM<dim>::init_shp_functions()
 {
+    // Construct quadrature points
+    // And construct and store shape functions and their derivatives at those points
+
     if (mesh.mesh_type == MeshType::triangular)
     {
         if (quadrature_type == QuadratureType::one_point)
@@ -160,7 +170,6 @@ void ElasticityFEM<dim>::init_shp_functions()
 
         if (mesh.shp_func_type == ShapeFcnType::lagrange_linear)
         {
-            // Store Shape Functions and their derivatives for all quad points
             N.resize(mesh.Nen, Nq);
             for (unsigned int idx = 0; idx < dim; ++idx)
                 dNdxi[idx].resize(mesh.Nen, Nq);
@@ -177,7 +186,6 @@ void ElasticityFEM<dim>::init_shp_functions()
         }
         else if (mesh.shp_func_type == ShapeFcnType::lagrange_quadratic)
         {
-            // Store Shape Functions and their derivatives for all quad points
             N.resize(mesh.Nen, Nq);
             for (unsigned int idx = 0; idx < dim; ++idx)
                 dNdxi[idx].resize(mesh.Nen, Nq);
@@ -198,6 +206,7 @@ void ElasticityFEM<dim>::init_shp_functions()
 template<unsigned int dim>
 void ElasticityFEM<dim>::assemble()
 {
+    // Initialize local arrays and variables
     unsigned int ldofs = mesh.Nen * dim;
     Eigen::MatrixXd Kl;                      // Local Stiffness
     Eigen::VectorXd Fl;                      // Local Force
@@ -216,14 +225,16 @@ void ElasticityFEM<dim>::assemble()
         Kl = Eigen::MatrixXd::Zero(ldofs, ldofs);
         Fl = Eigen::VectorXd::Zero(ldofs);
 
-        // Compute Elemental quantities
+        // Compute Elemental quantities (elem coords and solutions)
         compute_elem_quantities(conn, gidx, xe, de);
 
         // Quadrature Loop
         for (unsigned int iq = 0; iq < Nq; ++iq)
         {
+            // Compute Quadrature Derivatives
             compute_quad_derivatives(iq, xe, jac, jac_inv, dNdX, det_jac);
 
+            // Compute and add stiffness to local stiffness matrix
             compute_quad_stiff(iq, dNdX, det_jac, Kl);
 
             // Not impl compute_quad_force()
@@ -244,6 +255,7 @@ template<unsigned int dim>
 void ElasticityFEM<dim>::compute_elem_quantities(connectivity& conn, Eigen::VectorXui& gidx,
                                                  Eigen::MatrixXd& xe, Eigen::VectorXd& de)
 {
+    // Computes elemental coordinates and displacements
     for (unsigned int ind = 0; ind < mesh.Nen; ++ind)
     {
         for (unsigned int idim = 0; idim < dim; ++idim)
@@ -274,7 +286,7 @@ void ElasticityFEM<dim>::compute_quad_derivatives(unsigned int iq, Eigen::Matrix
     det_jac = jac.determinant();
     jac_inv = jac.inverse();
 
-    // Compute dN/dX
+    // Compute dNdX from dNdxi
     Eigen::MatrixXd dNdxi_q(mesh.Nen, dim);
     for (unsigned int idim = 0; idim < dim; ++idim)
     {
@@ -292,6 +304,7 @@ void ElasticityFEM<dim>::compute_quad_stiff(unsigned int iq, Eigen::MatrixXd& dN
     unsigned int loc_kdx;
     double temp;
 
+    // Compute Local Stiffness (-> integral (w_i,j  C_ijkl  u_k,l) dV)
     for (unsigned int bshp = 0; bshp < mesh.Nen; ++bshp)
     {
         for (unsigned int kdim = 0; kdim < dim; ++kdim)
@@ -319,6 +332,7 @@ void ElasticityFEM<dim>::compute_quad_stiff(unsigned int iq, Eigen::MatrixXd& dN
 template<unsigned int dim>
 void ElasticityFEM<dim>::create_dirichlet_map()
 {
+    // Creates a local map of unconstrained dofs
     // dirBCs should be sorted for this to work currently
     unsigned int dirBCsize = static_cast<unsigned int>(dirBCs.size());
     ucdofs = gdofs - dirBCsize;       // unconstrained dofs
@@ -346,6 +360,8 @@ void ElasticityFEM<dim>::create_dirichlet_map()
 template<unsigned int dim>
 void ElasticityFEM<dim>::apply_dirBC()
 {
+    // Applies Dirchlet BC by forming Kd and Fd by removing constrained dofs from K and F
+
     create_dirichlet_map();
 
     Kd = Eigen::MatrixXd::Zero(ucdofs, ucdofs);
@@ -371,6 +387,7 @@ void ElasticityFEM<dim>::apply_dirBC()
 template<unsigned int dim>
 void ElasticityFEM<dim>::reform_full_sol()
 {
+    // Constructs full solution vector from solutions at unconstrained dofs
     for (unsigned int idx = 0; idx < ucdofs; ++idx)
         d(dirmap[idx]) = dd(idx);
 }
@@ -378,6 +395,9 @@ void ElasticityFEM<dim>::reform_full_sol()
 template<unsigned int dim>
 void ElasticityFEM<dim>::raw_sol_print()
 {
+    // Prints nodal coordinates, element connectivity and solution field
+    // Not used currently since fem_to_vtk is implemented natively in C++
+
     std::ofstream nc("nodal_coords.txt");
     if (nc.is_open())
     {
