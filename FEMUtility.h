@@ -13,8 +13,7 @@ public:
 
     // 2D Quadrilateral
     static double N_quad(unsigned int index, double xi, double eta);
-    static double dNdxi_quad(unsigned int index, double xi, double eta);
-    static double dNdeta_quad(unsigned int index, double xi, double eta);
+    static double dNdxi_quad(unsigned int index, unsigned int didx, double xi, double eta);
 
     // 2D Triangle
     static double N_tri(unsigned int index, double xi, double eta);

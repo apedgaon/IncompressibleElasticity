@@ -271,8 +271,8 @@ void MixedUPElasticityFEM<dim>::init_shp_functions()
                 for (unsigned int idx = 0; idx < mesh.Nen; ++idx)
                 {
                     N(idx, jdx) = LinearLagrange::N_quad(idx, Qpts(0, jdx), Qpts(1, jdx));
-                    dNdxi[0](idx, jdx) = LinearLagrange::dNdxi_quad(idx, Qpts(0, jdx), Qpts(1, jdx));
-                    dNdxi[1](idx, jdx) = LinearLagrange::dNdeta_quad(idx, Qpts(0, jdx), Qpts(1, jdx));
+                    dNdxi[0](idx, jdx) = LinearLagrange::dNdxi_quad(idx, 0, Qpts(0, jdx), Qpts(1, jdx));
+                    dNdxi[1](idx, jdx) = LinearLagrange::dNdxi_quad(idx, 1, Qpts(0, jdx), Qpts(1, jdx));
                 }
             }
         }
@@ -353,8 +353,8 @@ void MixedUPElasticityFEM<dim>::init_shp_functions_p()
                 for (unsigned int idx = 0; idx < Nen_p; ++idx)
                 {
                     N_p(idx, jdx) = LinearLagrange::N_quad(idx, Qpts(0, jdx), Qpts(1, jdx));
-                    dNdxi_p[0](idx, jdx) = LinearLagrange::dNdxi_quad(idx, Qpts(0, jdx), Qpts(1, jdx));
-                    dNdxi_p[1](idx, jdx) = LinearLagrange::dNdeta_quad(idx, Qpts(0, jdx), Qpts(1, jdx));
+                    dNdxi_p[0](idx, jdx) = LinearLagrange::dNdxi_quad(idx, 0, Qpts(0, jdx), Qpts(1, jdx));
+                    dNdxi_p[1](idx, jdx) = LinearLagrange::dNdxi_quad(idx, 1, Qpts(0, jdx), Qpts(1, jdx));
                 }
             }
         }
