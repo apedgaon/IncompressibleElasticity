@@ -42,7 +42,7 @@ double LinearLagrange::N_quad(unsigned int index, double xi, double eta)
     return val;
 }
 
-
+// 2D Element (Quad) Linear Shape Fcn Derivatives, Index for correct Shp fcn, didx for derivative index
 double LinearLagrange::dNdxi_quad(unsigned int index, unsigned int didx, double xi, double eta)
 {
     double val = 0.0;
@@ -86,6 +86,7 @@ double LinearLagrange::N_tri(unsigned int index, double xi, double eta)
     return val;
 }
 
+// 2D (Tri) Element Linear Shape fcn derivatives, index for correct fcn, didx for derivative index
 double LinearLagrange::dNdxi_tri(unsigned int index, unsigned int didx, double xi, double eta)
 {
     double val = 0.0;
@@ -227,6 +228,7 @@ double QuadraticLagrange::dNdx(unsigned int index, double x)
     return val;
 }
 
+// 2D Quadratic Quadrilateral Shape Functions
 double QuadraticLagrange::N_quad(unsigned int index, double xi, double eta)
 {
     double val = 0.0;
@@ -252,6 +254,7 @@ double QuadraticLagrange::N_quad(unsigned int index, double xi, double eta)
     return val;
 }
 
+// 2D Quadratic Quadrilateral Shape Function Derivatives
 double QuadraticLagrange::dNdxi_quad(unsigned int index, unsigned int diff_idx, double xi, double eta)
 {
     double val = 0.0;
@@ -529,6 +532,9 @@ inline void Mesh<dim>::generate(Geometry<dim> geom)
     }
 }
 
+// Mesh Generation function which only generates mesh
+// Shape functions moved to individual classes
+// (Currently implements only tri(linear), quad(linear and quadratic), hex(linear))
 template<unsigned int dim>
 void Mesh2<dim>::generate(Geometry<dim> geom)
 {
@@ -774,6 +780,7 @@ void print_mat(Eigen::MatrixXd& A, std::string filename)
     }
 }
 
+// Printing Eigen::Vector in a specified file
 void print_vec(Eigen::VectorXd& A, std::string filename)
 {
     std::ofstream write_stream(filename.c_str());
