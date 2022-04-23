@@ -15,10 +15,12 @@ void MixedUPElasticityFEM<dim>::generate_mesh()
 template<unsigned int dim>
 void MixedUPElasticityFEM<dim>::initialize()
 {
+    // Initialize Shape Functions for displacements and pressures
     get_quadrature_pts(Nq, Qpts, wts, mesh.mesh_type, quadrature_type);
     init_shp_functions();
     init_shp_functions_p();
 
+    // Initilialize global arrays
     gdofs = mesh.Nnd * dim + mesh.Nel * Nen_p;
     offset_p = mesh.Nnd * dim;
     K = Eigen::MatrixXd::Zero(gdofs, gdofs);
@@ -29,39 +31,28 @@ void MixedUPElasticityFEM<dim>::initialize()
 template<unsigned int dim>
 void MixedUPElasticityFEM<dim>::solve()
 {
+    // Assemble K, G and F
     assemble();
+
+    // Apply displacement Dirichlet BC
     apply_dirBC();
 
-    //Eigen::SparseMatrix<double> Kds = Kd.sparseView();
-    //Eigen::MINRES<Eigen::SparseMatrix<double>> minres;
-    //minres.compute(Kds);
-    //dd = minres.solve(Fd);
-    //Eigen::ConjugateGradient< Eigen::SparseMatrix<double>> cg;
-    //cg.compute(Kds);
-    //cg.setTolerance(1.0e-14);
-    //dd = cg.solve(Fd);
-
-    //dd = Kd.lu().solve(Fd);
-    //dd = Kd.partialPivLu().solve(Fd);
-    //dd = Kd.colPivHouseholderQr().solve(Fd);
-    //dd = Kd.ldlt().solve(Fd);
+    // Solve linear system of equations (non positive definite. LU instead of LDLT)
     dd = Kd.fullPivLu().solve(Fd);
-
-    Eigen::VectorXd err = Kd * dd - Fd;
-    std::cout << "Error norm = " << err.norm() / Fd.norm() << "\n";
-    //std::cout << cg.error() << "\n";
     
+    // Reform full solution vector
     reform_full_sol();
 }
 
 template<unsigned int dim>
 void MixedUPElasticityFEM<dim>::post_print(std::string file)
 {
+    // Collect only displacement dofs
     Eigen::VectorXd du(mesh.Nnd * dim);
     for (unsigned int idx = 0; idx < mesh.Nnd * dim; ++idx)
         du(idx) = d(idx);
 
-    // Write vtk file with mesh and solutions
+    // Write vtk file with mesh and displacement solutions
     std::cout << "*** Writing VTK file - " << file.c_str() << ".vtu\n";
     fem_to_vtk_vector(file, mesh.elem_conn, mesh.nodal_coords, du);
 }
@@ -69,6 +60,7 @@ void MixedUPElasticityFEM<dim>::post_print(std::string file)
 template<unsigned int dim>
 void MixedUPElasticityFEM<dim>::assemble()
 {
+    // Initialize local arrays and variables for displacments
     unsigned int ldofs = mesh.Nen * dim;
     Eigen::MatrixXd Kl;                      // Local Stiffness
     Eigen::VectorXd Fl;                      // Local Force
@@ -80,6 +72,7 @@ void MixedUPElasticityFEM<dim>::assemble()
     Eigen::MatrixXd dNdX(mesh.Nen, dim);     // Quadrature dN / dX matrices
     double det_jac;                          // Determinant of Isoparametric Jacobian
 
+    // Initialize local arrays and variables for pressure
     unsigned int ldofs_p = Nen_p;
     Eigen::VectorXui gidx_p(ldofs_p);
     Eigen::MatrixXd Gl;
@@ -95,24 +88,28 @@ void MixedUPElasticityFEM<dim>::assemble()
         Fl = Eigen::VectorXd::Zero(ldofs);
         Gl = Eigen::MatrixXd::Zero(ldofs, ldofs_p);
 
-        // Compute Elemental quantities
+        // Compute Elemental quantities for diplacements and pressure
         compute_elem_quantities(conn, gidx, xe, de);
         compute_elem_quantities_p(iel, xe, conn, gidx_p, xp, pe);
 
 
-        // Quadrature Loop for u
+        // Quadrature Loop
         for (unsigned int iq = 0; iq < Nq; ++iq)
         {
+            // Compute Quadrature Derivatives for displacements
             compute_quad_derivatives(iq, xe, jac, jac_inv, dNdX, det_jac);
 
+            // Compute and add non-volumetric stiffness to local stiffness matrix Kl
             compute_quad_stiff(iq, dNdX, det_jac, Kl);
 
+            // Compute and add displacement and pressure coupling to local Gl
             compute_quad_G(iq, dNdX, det_jac, Gl);
 
             // Not impl compute_quad_force()
         }
 
-        // Global Assembly Kl -> K, Fl -> F
+        // """ K = [Ks  G; G^T  0],   F = [Fs;  0] """
+        // Global Assembly Kl -> Ks in K,   Fl -> Fs in F
         for (unsigned int jdx = 0; jdx < ldofs; ++jdx)
         {
             for (unsigned int idx = 0; idx < ldofs; ++idx)
@@ -121,6 +118,7 @@ void MixedUPElasticityFEM<dim>::assemble()
             F(gidx(jdx)) += Fl(jdx);
         }
 
+        // Global Assembly Gl -> G in K,    Gl^T -> G^T in K
         for (unsigned int jdx = 0; jdx < ldofs_p; ++jdx)
         {
             for (unsigned int idx = 0; idx < ldofs; ++idx)
@@ -137,6 +135,8 @@ void MixedUPElasticityFEM<dim>::assemble()
 template<unsigned int dim>
 void MixedUPElasticityFEM<dim>::get_quadrature_pts(unsigned int& Nq, Eigen::MatrixXd& Qpts, Eigen::VectorXd& wts, MeshType mesh_type, QuadratureType quadrature_type)
 {
+    // Compute and store quadrature points and weights
+
     if (mesh_type == MeshType::triangular)
     {
         if (quadrature_type == QuadratureType::one_point)
@@ -238,6 +238,7 @@ void MixedUPElasticityFEM<dim>::get_quadrature_pts(unsigned int& Nq, Eigen::Matr
 template<unsigned int dim>
 void MixedUPElasticityFEM<dim>::init_shp_functions()
 {
+    // Compute and store shape functions and their derivatives at quadrature points for displacements
     if (mesh.mesh_type == MeshType::triangular)
     {
         if (mesh.shp_func_type == ShapeFcnType::lagrange_linear)
@@ -261,7 +262,6 @@ void MixedUPElasticityFEM<dim>::init_shp_functions()
     {
         if (mesh.shp_func_type == ShapeFcnType::lagrange_linear)
         {
-            // Store Shape Functions and their derivatives for all quad points
             N.resize(mesh.Nen, Nq);
             for (unsigned int idx = 0; idx < dim; ++idx)
                 dNdxi[idx].resize(mesh.Nen, Nq);
@@ -278,7 +278,6 @@ void MixedUPElasticityFEM<dim>::init_shp_functions()
         }
         else if (mesh.shp_func_type == ShapeFcnType::lagrange_quadratic)
         {
-            // Store Shape Functions and their derivatives for all quad points
             N.resize(mesh.Nen, Nq);
             for (unsigned int idx = 0; idx < dim; ++idx)
                 dNdxi[idx].resize(mesh.Nen, Nq);
@@ -299,11 +298,12 @@ void MixedUPElasticityFEM<dim>::init_shp_functions()
 template<unsigned int dim>
 void MixedUPElasticityFEM<dim>::init_shp_functions_p()
 {
+    // Compute and store shape functions and their derivatives at quadrature points for pressure
+
     if (mesh.mesh_type == MeshType::triangular)
     {
-        if (shp_func_type_p == ShapeFcnType::constant)
+        if (shp_func_type_p == ShapeFcnType::constant)  // one pressure dof at centroid
         {
-            // Store Shape Functions and their derivatives for all quad points
             Nen_p = 1;
             N_p.resize(Nen_p, Nq);
             for (unsigned int idx = 0; idx < dim; ++idx)
@@ -322,9 +322,8 @@ void MixedUPElasticityFEM<dim>::init_shp_functions_p()
     }
     else if (mesh.mesh_type == MeshType::quadrilateral)
     {
-        if (shp_func_type_p == ShapeFcnType::constant)
+        if (shp_func_type_p == ShapeFcnType::constant)   // one pressure dof at centroid
         {
-            // Store Shape Functions and their derivatives for all quad points
             Nen_p = 1;
             N_p.resize(Nen_p, Nq);
             for (unsigned int idx = 0; idx < dim; ++idx)
@@ -340,9 +339,8 @@ void MixedUPElasticityFEM<dim>::init_shp_functions_p()
                 }
             }
         }
-        else if (shp_func_type_p == ShapeFcnType::lagrange_linear)
+        else if (shp_func_type_p == ShapeFcnType::lagrange_linear)  // four pressure dofs at nodes
         {
-            // Store Shape Functions and their derivatives for all quad points
             Nen_p = 4;
             N_p.resize(Nen_p, Nq);
             for (unsigned int idx = 0; idx < dim; ++idx)
@@ -364,6 +362,7 @@ void MixedUPElasticityFEM<dim>::init_shp_functions_p()
 template<unsigned int dim>
 void MixedUPElasticityFEM<dim>::compute_elem_quantities(connectivity& conn, Eigen::VectorXui& gidx, Eigen::MatrixXd& xe, Eigen::VectorXd& de)
 {
+    // Computes elemental nodal coordinates, displacements and its global index
     for (unsigned int ind = 0; ind < mesh.Nen; ++ind)
     {
         for (unsigned int idim = 0; idim < dim; ++idim)
@@ -380,6 +379,7 @@ template<unsigned int dim>
 void MixedUPElasticityFEM<dim>::compute_elem_quantities_p(unsigned int iel, Eigen::MatrixXd& xe, connectivity& conn,
                                                           Eigen::VectorXui& gidx_p, Eigen::MatrixXd& xp, Eigen::VectorXd& pe)
 {
+    // Computes elemental pressure, pressure dof coordinates(not impl) and its global index
     for (unsigned int ip = 0; ip < Nen_p; ++ip)
     {
         gidx_p(ip) = offset_p + iel * Nen_p + ip;
@@ -424,6 +424,9 @@ void MixedUPElasticityFEM<dim>::compute_quad_derivatives(unsigned int iq, Eigen:
 template<unsigned int dim>
 void MixedUPElasticityFEM<dim>::compute_quad_stiff(unsigned int iq, Eigen::MatrixXd& dNdX, double det_jac, Eigen::MatrixXd& Kl)
 {
+    // Compute Local Deviatoric Stiffness -> integral (sym(w_i,j)  2 mu  sym(u_i,j)) dV
+    // """ integral (sym(w_i,j)  2 mu  sym(u_i,j)) dV = integral (w_i,j  mu  u_i,j) dV + integral (w_i,j  mu  u_j,i) dV
+
     unsigned int loc_idx;
     unsigned int loc_kdx;
     double temp;
@@ -467,8 +470,9 @@ void MixedUPElasticityFEM<dim>::compute_quad_stiff(unsigned int iq, Eigen::Matri
 template<unsigned int dim>
 void MixedUPElasticityFEM<dim>::compute_quad_G(unsigned int iq, Eigen::MatrixXd& dNdX, double det_jac, Eigen::MatrixXd& Gl)
 {
-    unsigned int loc_idx;
+    // Compute displacement and pressure coupling matrix Gl = integral (w_i,i   p) dV
 
+    unsigned int loc_idx;
     for (unsigned int bshp = 0; bshp < Nen_p; ++bshp)
     {
         for (unsigned int ashp = 0; ashp < mesh.Nen; ++ashp)
@@ -485,6 +489,8 @@ void MixedUPElasticityFEM<dim>::compute_quad_G(unsigned int iq, Eigen::MatrixXd&
 template<unsigned int dim>
 void MixedUPElasticityFEM<dim>::apply_dirBC()
 {
+    // Applies Dirchlet BC by forming Kd and Fd by removing constrained dofs from K and F
+
     create_dirichlet_map();
 
     Kd = Eigen::MatrixXd::Zero(ucdofs, ucdofs);
@@ -505,14 +511,12 @@ void MixedUPElasticityFEM<dim>::apply_dirBC()
         for (unsigned int idx = 0; idx < ucdofs; ++idx)
             Fd(idx) -= K(dirmap[idx], gidx) * dirBC.val;
     }
-
-    //print_mat(Kd, "Kd.txt");
-    //print_vec(Fd, "Fd.txt");
 }
 
 template<unsigned int dim>
 void MixedUPElasticityFEM<dim>::create_dirichlet_map()
 {
+    // Creates a local map of unconstrained dofs
     // dirBCs should be sorted for this to work currently
     unsigned int dirBCsize = static_cast<unsigned int>(dirBCs.size());
     ucdofs = gdofs - dirBCsize;       // unconstrained dofs
@@ -536,6 +540,7 @@ void MixedUPElasticityFEM<dim>::create_dirichlet_map()
         }
     }
 
+    // Needs additional pressure dofs which are by default unconstrained
     for (unsigned int iel = 0; iel < mesh.Nel; ++iel)
     {
         for (unsigned int ien = 0; ien < Nen_p; ++ien)
@@ -546,6 +551,7 @@ void MixedUPElasticityFEM<dim>::create_dirichlet_map()
 template<unsigned int dim>
 void MixedUPElasticityFEM<dim>::reform_full_sol()
 {
+    // Constructs full solution vector from solutions at unconstrained dofs
     for (unsigned int idx = 0; idx < ucdofs; ++idx)
         d(dirmap[idx]) = dd(idx);
 }

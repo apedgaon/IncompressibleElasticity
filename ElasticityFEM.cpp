@@ -255,7 +255,7 @@ template<unsigned int dim>
 void ElasticityFEM<dim>::compute_elem_quantities(connectivity& conn, Eigen::VectorXui& gidx,
                                                  Eigen::MatrixXd& xe, Eigen::VectorXd& de)
 {
-    // Computes elemental coordinates and displacements
+    // Computes elemental nodal coordinates and displacements
     for (unsigned int ind = 0; ind < mesh.Nen; ++ind)
     {
         for (unsigned int idim = 0; idim < dim; ++idim)
