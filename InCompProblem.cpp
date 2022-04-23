@@ -68,7 +68,7 @@ void Problem1a()
     // Initialize, Solve and Post
     fem.initialize();
     fem.solve();
-    fem.post_print("fem_1_1");
+    fem.post_print("Tri_1a_d");
 }
 
 // Part 1a: 2 triangle mesh with horizontal displacement (1-field)
@@ -128,7 +128,7 @@ void Problem1a2()
     // Initialize, Solve and Post
     fem.initialize();
     fem.solve();
-    fem.post_print("fem_1_2");
+    fem.post_print("Tri_1a_h");
 }
 
 // Part 1b: Linear quadrilateral with 1x1 qudrature (1-field)
@@ -206,7 +206,7 @@ void Problem1b()
     // Initialized, Solve and Post
     fem.initialize();
     fem.solve();
-    fem.post_print("fem_1_3");
+    fem.post_print("Lin_quad_1b");
 }
 
 // Part 1c: Quadratic quadrilateral with 2x2 quadrature (1-field)
@@ -284,7 +284,7 @@ void Problem1c()
     // Initialize, Solve and Post
     fem.initialize();
     fem.solve();
-    fem.post_print("fem_1_4");
+    fem.post_print("Quad_quad_1c");
 }
 
 // Part 2a: 2 Triangle mesh with 1x1 quadrature and diagonal displacements (2-field)
@@ -352,7 +352,7 @@ void Problem2a()
     // Initialize, Solve and Post
     fem.initialize();
     fem.solve();
-    fem.post_print("fem_1_5");
+    fem.post_print("Tri_2a_d");
 }
 
 // Part 2a: 2 Triangle mesh with 1x1 quadrature and horizontal displacements (2-field)
@@ -415,7 +415,7 @@ void Problem2a2()
     // Initialize, Solve and Post
     fem.initialize();
     fem.solve();
-    fem.post_print("fem_1_6");
+    fem.post_print("Tri_2a_h");
 }
 
 // Part 2b: Linear quadrilateral with 2x2 quadrature (2-field)
@@ -428,7 +428,7 @@ void Problem2b()
     fem.geom.length[0] = 1.0;   // cm
     fem.geom.length[1] = 1.0;   // cm
 
-    // Set material
+    // Set material parameters
     fem.mat.lambda = 9.15e8;    // N cm^-2
     fem.mat.mu = 1.83e6;        // N cm^-2
     fem.mat.init_elasticity_tensor(); // Constructs C_ijkl
@@ -496,7 +496,7 @@ void Problem2b()
     // Initialize, Solve and Post
     fem.initialize();
     fem.solve();
-    fem.post_print("fem_1_7");
+    fem.post_print("Lin_quad_2b");
 }
 
 // Part 2c: Quadratic Quadrilateral with 3x3 quadrature (2-field)
@@ -577,7 +577,7 @@ void Problem2c()
     // Initialize, Solve and Post
     fem.initialize();
     fem.solve();
-    fem.post_print("fem_1_8");
+    fem.post_print("Quad_quad_2c");
 }
 
 // Part 3c: Rectangular beam bending with 12 Traingles and 1x1 quadrature (2-field)
@@ -585,10 +585,12 @@ void Problem3a()
 {
     // Create Mixed UP Elastcity FEM Object
     MixedUPElasticityFEM<2> fem;
+
+    // Set geometry
     fem.geom.length[0] = 3.0;   // cm
     fem.geom.length[1] = 1.0;   // cm
 
-    // Set geometry
+    // Set material parameters
     fem.mat.lambda = 9.15e8;    // N cm^-2
     fem.mat.mu = 1.83e6;        // N cm^-2
     fem.mat.init_elasticity_tensor();  // Constructs C_ijkl
@@ -638,7 +640,7 @@ void Problem3a()
     // Initialize, Solve and Post
     fem.initialize();
     fem.solve();
-    fem.post_print("rfem_3_1");
+    fem.post_print("Tri_3a");
 }
 
 // Part 3b: Rectangular beam bending with 24 Linear quadrilaterals and 2x2 quadrature (2-field)
@@ -701,7 +703,7 @@ void Problem3b()
     // Initialize, Solve and Post
     fem.initialize();
     fem.solve();
-    fem.post_print("rfem_3_2");
+    fem.post_print("Lin_quad_3b");
 }
 
 // Part 3c: Rectangular beam bending with 12 Quadratic Quadrilaterals and 3x3 quadrature (2-field)
@@ -764,7 +766,7 @@ void Problem3c()
     // Initialize, Solve and Post
     fem.initialize();
     fem.solve();
-    fem.post_print("rfem_3_3");
+    fem.post_print("Quad_quad_3c");
 }
 
 int main(int argc, char* argv[])
