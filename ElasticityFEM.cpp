@@ -12,14 +12,14 @@ void ElasticityFEM<dim>::generate_mesh()
 template<unsigned int dim>
 void ElasticityFEM<dim>::initialize()
 {
+    // Initialize shape functions
+    init_shp_functions();
+
     // Initialize global vectors
     gdofs = mesh.Nnd * dim;
     K = Eigen::MatrixXd::Zero(gdofs, gdofs);
     F = Eigen::VectorXd::Zero(gdofs);
     d = Eigen::VectorXd::Zero(gdofs);
-
-    // Initialize shape functions
-    init_shp_functions();
 }
 
 template<unsigned int dim>
