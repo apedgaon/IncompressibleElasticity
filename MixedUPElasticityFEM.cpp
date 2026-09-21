@@ -38,7 +38,17 @@ void MixedUPElasticityFEM<dim>::solve()
     apply_dirBC();
 
     // Solve linear system of equations (non positive definite. LU instead of LDLT)
-    dd = Kd.fullPivLu().solve(Fd);
+    auto lu = Kd.fullPivLu();
+    dd = lu.solve(Fd);
+
+    // Normwise backward error
+    Eigen::VectorXd r = Kd * dd - Fd;
+    double scale = Kd.norm() * dd.norm() + Fd.norm();
+    double error = (scale > 0.0) ? r.norm() / scale : r.norm();
+
+    std::cout << "Finite: " << dd.allFinite() << '\n'
+            << "Rank: " << lu.rank() << "/" << Kd.cols() << '\n'
+            << "Backward error: " << error << '\n';
     
     // Reform full solution vector
     reform_full_sol();
@@ -430,6 +440,10 @@ void MixedUPElasticityFEM<dim>::compute_quad_stiff(unsigned int iq, Eigen::Matri
     unsigned int loc_idx;
     unsigned int loc_kdx;
     double temp;
+    //double mu_rescale = mat.mu;
+
+    // Need this rescaling to avoid nearly zero rows associated with [G^T 0]
+    double mu_rescale = 1.0; // K/mu ; p = mu * p_hat
 
     // integral (w_i,j  mu  u_i,j) dV
     for (unsigned int bshp = 0; bshp < mesh.Nen; ++bshp)
@@ -442,7 +456,7 @@ void MixedUPElasticityFEM<dim>::compute_quad_stiff(unsigned int iq, Eigen::Matri
                 loc_idx = dim * ashp + idim;
                 temp = 0.0;
                 for (unsigned int jdim = 0; jdim < dim; ++jdim)
-                    temp += dNdX(ashp, jdim) * mat.mu * dNdX(bshp, jdim);
+                    temp += dNdX(ashp, jdim) * mu_rescale *  dNdX(bshp, jdim);
 
                 Kl(loc_idx, loc_kdx) += temp * wts(iq) * det_jac;
             }
@@ -460,7 +474,7 @@ void MixedUPElasticityFEM<dim>::compute_quad_stiff(unsigned int iq, Eigen::Matri
                 for (unsigned int idim = 0; idim < dim; ++idim)
                 {
                     loc_idx = dim * ashp + idim;
-                    Kl(loc_idx, loc_kdx) += dNdX(ashp, jdim) * mat.mu * dNdX(bshp, idim) * wts(iq) * det_jac;
+                    Kl(loc_idx, loc_kdx) += dNdX(ashp, jdim) * mu_rescale * dNdX(bshp, idim) * wts(iq) * det_jac;
                 }
             }
         }
